@@ -144,6 +144,10 @@ tr:hover td{background:#fafafa}
   #view-dashboard{display:block!important}
   .print-header{display:flex!important;align-items:center;gap:14px;margin-bottom:18px;border-bottom:3px solid var(--red);padding-bottom:12px}
 }
+
+.dept-breakdown-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.dept-breakdown-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.dept-breakdown-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.chart-grid{grid-template-columns:1fr}.fg-3,.fg-4{grid-template-columns:1fr 1fr}.emp-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.fg-2,.fg-3,.fg-4{grid-template-columns:1fr}.emp-grid{grid-template-columns:1fr}header{padding:0 12px}}
 </style>
@@ -807,6 +811,23 @@ tr:hover td{background:#fafafa}
     <div style="font-size:12px;color:var(--gray-dark);line-height:1.6" id="rs-advice"></div>
   </div>
   <!-- Filters -->
+  
+  <!-- ROLLUP STATUS -->
+  <div class="card" style="margin-bottom:18px;border-left:4px solid var(--red);padding:16px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px">Data Rollup Status</div>
+      <div style="font-size:11px;color:var(--gray-mid)" id="rs-week-label"></div>
+    </div>
+    <div class="rollup-status">
+      <div class="rs-step" id="rs-daily"><div class="rs-icon">&#128203;</div><div class="rs-lbl">Daily</div><div class="rs-cnt" id="rs-d-cnt">0 this week</div></div>
+      <div class="rs-step" id="rs-weekly"><div class="rs-icon">&#128197;</div><div class="rs-lbl">Weekly</div><div class="rs-cnt" id="rs-w-cnt">0 this month</div></div>
+      <div class="rs-step" id="rs-monthly"><div class="rs-icon">&#128198;</div><div class="rs-lbl">Monthly</div><div class="rs-cnt" id="rs-m-cnt">0 this quarter</div></div>
+      <div class="rs-step" id="rs-quarterly"><div class="rs-icon">&#128200;</div><div class="rs-lbl">Quarterly</div><div class="rs-cnt" id="rs-q-cnt">0 submitted</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--gray-dark);line-height:1.6;margin-top:10px" id="rs-advice"></div>
+  </div>
+
+  <!-- FILTERS -->
   <div class="dash-filters">
     <span class="dash-filter-label">Period:</span>
     <button class="filter-btn active" onclick="fP('all',this)">All</button>
@@ -817,13 +838,13 @@ tr:hover td{background:#fafafa}
     <span class="dash-filter-label" style="margin-left:10px">Dept:</span>
     <button class="filter-btn active" onclick="dFilter('all',this)">All</button>
     <button class="filter-btn" onclick="dFilter('Management',this)">Management</button>
-        <button class="filter-btn" onclick="dFilter('Accounting',this)">Accounting</button>
-        <button class="filter-btn" onclick="dFilter('Human Resources',this)">Human Resources</button>
-        <button class="filter-btn" onclick="dFilter('Safety',this)">Safety</button>
-        <button class="filter-btn" onclick="dFilter('Business Development',this)">Business Development</button>
-        
+    <button class="filter-btn" onclick="dFilter('Accounting',this)">Accounting</button>
+    <button class="filter-btn" onclick="dFilter('Human Resources',this)">HR</button>
+    <button class="filter-btn" onclick="dFilter('Safety',this)">Safety</button>
+    <button class="filter-btn" onclick="dFilter('Business Development',this)">BD</button>
   </div>
-  <!-- KPIs -->
+
+  <!-- TOP KPI CARDS -->
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Total Invoiced</div><div class="kpi-value" id="kpi_inv">$0</div><div class="kpi-sub">across submissions</div></div>
     <div class="kpi black"><div class="kpi-label">GP % Avg</div><div class="kpi-value" id="kpi_gp">--</div><div class="kpi-sub">target &ge;40%</div></div>
@@ -834,12 +855,58 @@ tr:hover td{background:#fafafa}
     <div class="kpi gray"><div class="kpi-label">Sick Call-Ins</div><div class="kpi-value" id="kpi_sick">0</div><div class="kpi-sub">across submissions</div></div>
     <div class="kpi"><div class="kpi-label">Submissions</div><div class="kpi-value" id="kpi_count">0</div><div class="kpi-sub">team entries</div></div>
   </div>
+
+  <!-- DEPARTMENT BREAKDOWN CARDS -->
+  <div style="margin-bottom:20px">
+    <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--black);margin-bottom:12px">Department Summary</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px" id="dept-breakdown">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
   <div class="chart-grid">
     <div class="chart-card"><div class="chart-title">Revenue by Type</div><canvas id="chartRevType" height="200"></canvas></div>
     <div class="chart-card"><div class="chart-title">GP % by Submitter (Target &ge;40%)</div><canvas id="chartGP" height="200"></canvas></div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="chart-grid">
     <div class="chart-card wide"><div class="chart-title">Invoiced vs. Cash Received by Submitter</div><canvas id="chartInv" height="120"></canvas></div>
   </div>
-  <div class="tbl-wrap">
+
+  <!-- CHARTS ROW 3 — Department Activity -->
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Submissions by Department</div><canvas id="chartDeptCount" height="200"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Sick Call-Ins by Week</div><canvas id="chartSick" height="200"></canvas></div>
+  </div>
+
+  <!-- CHARTS ROW 4 -->
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Google Reviews — Trend</div><canvas id="chartGrev" height="200"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Leads vs. Jobs Started</div><canvas id="chartLeads" height="200"></canvas></div>
+  </div>
+
+  <!-- DEPARTMENT DETAIL TABLES -->
+  <div id="dept-detail-section">
+    <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--black);margin-bottom:12px;margin-top:4px">Department Detail</div>
+    <div id="dept-tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="filter-btn active" onclick="showDeptTab('all',this)">All Submissions</button>
+      <button class="filter-btn" onclick="showDeptTab('Management',this)">Management</button>
+      <button class="filter-btn" onclick="showDeptTab('Accounting',this)">Accounting</button>
+      <button class="filter-btn" onclick="showDeptTab('Human Resources',this)">HR</button>
+      <button class="filter-btn" onclick="showDeptTab('Safety',this)">Safety</button>
+      <button class="filter-btn" onclick="showDeptTab('Business Development',this)">Biz Dev</button>
+    </div>
+    <div id="dept-detail-content"></div>
+  </div>
+
+  <!-- MAIN SUBMISSIONS TABLE -->
+  <div class="tbl-wrap" style="margin-top:20px">
+    <div class="tbl-hdr"><div class="t-title">All Submissions</div></div>
+    <div id="dash_table"></div>
+  </div>
+<div class="tbl-wrap">
     <div class="tbl-hdr"><div class="t-title">All Submissions</div></div>
     <div id="dash_table"></div>
   </div>
@@ -1300,6 +1367,9 @@ function renderDash(){
   document.getElementById('kpi_count').textContent=data.length;
   renderCharts(data);
   renderDashTable(data);
+  renderDeptBreakdown(data);
+  renderExtraCharts(data);
+  renderDeptDetail(data);
   updateRollupStatus();
 }
 function renderCharts(data){
@@ -1506,6 +1576,194 @@ function printReport(){
   var lbl=document.getElementById('print_date_lbl');
   if(lbl)lbl.textContent='Generated: '+new Date().toLocaleString('en-US');
   window.print();
+}
+
+
+/* ── DEPARTMENT BREAKDOWN ── */
+var DEPT_CONFIG = {
+  'Management':         { color: '#D12229', bg: '#fdeced', icon: '&#128202;' },
+  'Accounting':         { color: '#1a7a3e', bg: '#e4f4ea', icon: '&#128176;' },
+  'Human Resources':    { color: '#1a56db', bg: '#e8f0fe', icon: '&#128101;' },
+  'Safety':             { color: '#e65100', bg: '#fff3e0', icon: '&#9888;&#65039;' },
+  'Business Development': { color: '#6a1b9a', bg: '#f3e5f5', icon: '&#129309;' }
+};
+
+function renderDeptBreakdown(data) {
+  var container = document.getElementById('dept-breakdown');
+  if (!container) return;
+  var depts = Object.keys(DEPT_CONFIG);
+  container.innerHTML = depts.map(function(dept) {
+    var dc = DEPT_CONFIG[dept];
+    var dData = data.filter(function(r) { return r.dept === dept; });
+    var count = dData.length;
+    var lastSubmit = count ? new Date(Math.max.apply(null, dData.map(function(r) { return new Date(r.submitted_at); }))) : null;
+    var lastStr = lastSubmit ? lastSubmit.toLocaleDateString('en-US', {month:'short',day:'numeric'}) : 'No submissions';
+    var totInv = dData.reduce(function(s,r){ return s+getInv(r); }, 0);
+    var gpArr = dData.filter(function(r){ return getGP(r)>0; }).map(function(r){ return getGP(r); });
+    var avgGP = gpArr.length ? (gpArr.reduce(function(a,b){return a+b;},0)/gpArr.length).toFixed(1) : null;
+    var gpColor = avgGP ? (+avgGP >= 40 ? '#1a7a3e' : '#D12229') : 'var(--gray-mid)';
+    var incidents = dData.reduce(function(s,r){ return s+(r.saf_d_inc_yn==='yes'?1:0)+(r.saf_w_incidents||0); }, 0);
+    var sick = dData.reduce(function(s,r){ return s+(r.hum_d_sick||r.hum_w_sick_week||0); }, 0);
+    var grev = dData.reduce(function(s,r){ return s+(r.bus_d_grev||r.bus_w_grev||r.bus_m_grev||0); }, 0);
+
+    // dept-specific highlight stat
+    var statLabel = '', statVal = '';
+    if (dept === 'Management') { statLabel = 'Invoiced'; statVal = f$(totInv); }
+    else if (dept === 'Accounting') { statLabel = 'GP %'; statVal = avgGP ? avgGP+'%' : '--'; }
+    else if (dept === 'Human Resources') { statLabel = 'Sick Calls'; statVal = sick; }
+    else if (dept === 'Safety') { statLabel = 'Incidents'; statVal = incidents; }
+    else if (dept === 'Business Development') { statLabel = 'Reviews'; statVal = grev; }
+
+    return '<div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border-top:4px solid '+dc.color+'">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      + '<span style="font-size:18px">'+dc.icon+'</span>'
+      + '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:'+dc.color+'">'+dept.replace('Business Development','Biz Dev').replace('Human Resources','HR')+'</div>'
+      + '</div>'
+      + '<div style="font-size:26px;font-weight:900;color:var(--black);margin-bottom:2px">'+count+'</div>'
+      + '<div style="font-size:11px;color:var(--gray-mid);margin-bottom:10px">submission'+(count!==1?'s':'')+'</div>'
+      + '<div style="display:flex;justify-content:space-between;border-top:1px solid #f0f0f0;padding-top:8px">'
+      + '<div><div style="font-size:10px;color:var(--gray-mid);font-weight:700;text-transform:uppercase">'+statLabel+'</div>'
+      + '<div style="font-size:14px;font-weight:800;color:'+gpColor+'">'+statVal+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:10px;color:var(--gray-mid);font-weight:700;text-transform:uppercase">Last Entry</div>'
+      + '<div style="font-size:11px;color:var(--gray-dark)">'+lastStr+'</div></div>'
+      + '</div></div>';
+  }).join('');
+}
+
+/* ── DEPT DETAIL TAB ── */
+var currentDeptTab = 'all';
+function showDeptTab(dept, btn) {
+  currentDeptTab = dept;
+  document.querySelectorAll('#dept-tabs .filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderDeptDetail(getFilt());
+}
+
+function renderDeptDetail(data) {
+  var container = document.getElementById('dept-detail-content');
+  if (!container) return;
+  var filtered = currentDeptTab === 'all' ? data : data.filter(function(r){ return r.dept === currentDeptTab; });
+  if (!filtered.length) { container.innerHTML = '<div class="empty-state">No submissions for this department yet.</div>'; return; }
+
+  var sorted = filtered.slice().sort(function(a,b){ return new Date(b.submitted_at)-new Date(a.submitted_at); });
+  var pB = {daily:'badge-red',weekly:'badge-black',monthly:'badge-gray',quarterly:'badge-gray'};
+
+  // Build dept-specific columns
+  var rows = sorted.map(function(r) {
+    var dc = DEPT_CONFIG[r.dept] || {color:'#000',bg:'#f0f0f0'};
+    var gp = getGP(r);
+    var gpStr = gp ? (gp>=40?'<span style="color:#1a7a3e;font-weight:800">'+gp+'%</span>':'<span style="color:#D12229;font-weight:800">'+gp+'%</span>') : '--';
+
+    // Dept-specific detail columns
+    var extra = '';
+    if (r.dept === 'Management') {
+      extra = '<td>'+f$(getInv(r))+'</td><td>'+f$(getCash(r))+'</td><td>'+gpStr+'</td><td>'+(r.man_d_leads_today||r.man_m_leads_month||'--')+'</td>';
+    } else if (r.dept === 'Accounting') {
+      extra = '<td>'+f$(r.acc_w_ar_total||0)+'</td><td>'+f$(r.acc_w_ar_60||0)+'</td><td>'+(r.acc_w_plooto_yn||'--')+'</td><td>'+gpStr+'</td>';
+    } else if (r.dept === 'Human Resources') {
+      extra = '<td>'+(r.hum_d_sick||r.hum_w_sick_week||0)+'</td><td>'+(r.hum_d_late||0)+'</td><td>'+(r.hum_d_rtos||0)+'</td><td>'+(r.hum_w_new_adj||'--')+'</td>';
+    } else if (r.dept === 'Safety') {
+      extra = '<td>'+(r.saf_d_inc_yn==='yes'?'<span style="color:#D12229;font-weight:800">YES</span>':'No')+'</td>'
+        +'<td>'+(r.saf_d_nm_yn==='yes'?'<span style="color:#e65100;font-weight:800">YES</span>':'No')+'</td>'
+        +'<td>'+(r.saf_w_incidents||0)+'</td><td>'+(r.saf_m_incidents||0)+'</td>';
+    } else if (r.dept === 'Business Development') {
+      extra = '<td>'+(r.bus_d_grev||r.bus_w_grev||0)+'</td><td>'+(r.bus_d_surveys||r.bus_w_surveys||0)+'</td>'
+        +'<td>'+(r.bus_d_bd_calls||0)+'</td><td>'+(r.bus_w_est_up||0)+'</td>';
+    } else {
+      extra = '<td>'+f$(getInv(r))+'</td><td>'+f$(getCash(r))+'</td><td>'+gpStr+'</td><td>--</td>';
+    }
+
+    return '<tr>'
+      +'<td>'+new Date(r.submitted_at).toLocaleDateString('en-US')+'</td>'
+      +'<td><strong>'+r.name+'</strong></td>'
+      +'<td><span class="badge '+(pB[r.period]||'badge-gray')+'">'+r.period+'</span></td>'
+      + extra
+      +'</tr>';
+  }).join('');
+
+  // Build dept-specific headers
+  var extraHeaders = '';
+  if (currentDeptTab === 'Management' || currentDeptTab === 'all') {
+    extraHeaders = '<th>Invoiced</th><th>Cash</th><th>GP %</th><th>Leads</th>';
+  } else if (currentDeptTab === 'Accounting') {
+    extraHeaders = '<th>AR Total</th><th>AR &gt;60 Days</th><th>Plooto Done</th><th>GP %</th>';
+  } else if (currentDeptTab === 'Human Resources') {
+    extraHeaders = '<th>Sick Calls</th><th>Late</th><th>RTOs</th><th>New Adj.</th>';
+  } else if (currentDeptTab === 'Safety') {
+    extraHeaders = '<th>Incident</th><th>Near Miss</th><th>Incidents/Wk</th><th>Incidents/Mo</th>';
+  } else if (currentDeptTab === 'Business Development') {
+    extraHeaders = '<th>Reviews</th><th>Surveys</th><th>BD Calls</th><th>Est. Uploaded</th>';
+  }
+
+  container.innerHTML = '<div class="tbl-wrap"><table>'
+    +'<thead><tr><th>Date</th><th>Name</th><th>Period</th>'+extraHeaders+'</tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>';
+}
+
+/* ── EXTRA CHARTS ── */
+function renderExtraCharts(data) {
+  var R='#D12229',GN='#1a7a3e',B='#000',G='#9A9A9C';
+
+  // Chart: Submissions by department (donut)
+  var depts = Object.keys(DEPT_CONFIG);
+  var deptCounts = depts.map(function(d){ return data.filter(function(r){ return r.dept===d; }).length; });
+  var deptColors = depts.map(function(d){ return DEPT_CONFIG[d].color; });
+  if (charts.dc) charts.dc.destroy();
+  var dcCtx = document.getElementById('chartDeptCount');
+  if (dcCtx) {
+    charts.dc = new Chart(dcCtx.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: depts.map(function(d){ return d.replace('Business Development','Biz Dev').replace('Human Resources','HR'); }), datasets: [{ data: deptCounts, backgroundColor: deptColors, borderWidth: 2 }] },
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+    });
+  }
+
+  // Chart: Sick call-ins trend (last 10 daily submissions)
+  var dailies = data.filter(function(r){ return r.period==='daily'; })
+    .sort(function(a,b){ return new Date(a.date)-new Date(b.date); }).slice(-10);
+  var sickLabels = dailies.map(function(r){ return new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  var sickVals = dailies.map(function(r){ return (r.hum_d_sick||0); });
+  if (charts.sick) charts.sick.destroy();
+  var sickCtx = document.getElementById('chartSick');
+  if (sickCtx) {
+    charts.sick = new Chart(sickCtx.getContext('2d'), {
+      type: 'bar',
+      data: { labels: sickLabels.length ? sickLabels : ['No data'], datasets: [{ label: 'Sick Calls', data: sickVals, backgroundColor: R, borderRadius: 4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }
+
+  // Chart: Google Reviews trend
+  var grevLabels = dailies.map(function(r){ return new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  var grevVals = dailies.map(function(r){ return (r.bus_d_grev||0); });
+  if (charts.grev) charts.grev.destroy();
+  var grevCtx = document.getElementById('chartGrev');
+  if (grevCtx) {
+    charts.grev = new Chart(grevCtx.getContext('2d'), {
+      type: 'line',
+      data: { labels: grevLabels.length ? grevLabels : ['No data'], datasets: [{ label: 'Google Reviews', data: grevVals, borderColor: GN, backgroundColor: 'rgba(26,122,62,0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }
+
+  // Chart: Leads vs Jobs Started
+  var leadVals = dailies.map(function(r){ return (r.man_d_leads_today||0); });
+  var jobVals = dailies.map(function(r){ return (r.man_d_jobs_mtd||0); });
+  if (charts.leads) charts.leads.destroy();
+  var leadsCtx = document.getElementById('chartLeads');
+  if (leadsCtx) {
+    charts.leads = new Chart(leadsCtx.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: grevLabels.length ? grevLabels : ['No data'],
+        datasets: [
+          { label: 'Leads', data: leadVals, backgroundColor: B, borderRadius: 4 },
+          { label: 'Jobs Started', data: jobVals, backgroundColor: R, borderRadius: 4 }
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
 }
 
 /* ── INIT ── */
