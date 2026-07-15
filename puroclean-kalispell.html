@@ -881,9 +881,116 @@ tr:hover td{background:#fafafa}
 <script>
 const MANAGER_PW='PuroClean2026';
 const SK='puroclean_kalispell_v2';
-let _m={};
-async function sGet(k){try{if(window.storage){const r=await window.storage.get(k,true);return r?r.value:null;}}catch(e){}return _m[k]||null;}
-async function sSet(k,v){try{if(window.storage){await window.storage.set(k,v,true);return;}}catch(e){}_m[k]=v;}
+
+/* ── SUPABASE DATABASE ── */
+const SUPABASE_URL = 'https://idsohcpzqxloasoqilfc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2WfZpYVV_w1maUvqdKYmDA_iStTPyRU';
+
+function sbHeaders() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
+async function sGet(sk) {
+  // Load all reports for this location from Supabase
+  try {
+    var resp = await fetch(SUPABASE_URL + '/rest/v1/reports?select=*&order=submitted_at.desc', {
+      headers: sbHeaders()
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var rows = await resp.json();
+    // Reconstruct reports array: merge base fields + data JSONB
+    var result = rows.map(function(r) {
+      return Object.assign({}, r.data, {
+        id: r.id,
+        name: r.name,
+        dept: r.dept,
+        role: r.role,
+        date: r.date,
+        period: r.period,
+        submitted_at: r.submitted_at,
+        last_edited: r.last_edited
+      });
+    });
+    return JSON.stringify(result);
+  } catch(e) {
+    console.error('[DB] Load error:', e);
+    return null;
+  }
+}
+
+async function sSet(sk, v) {
+  // sSet is called after submit with full reports array - we handle inserts individually
+  // This is a no-op since we insert directly in submitReport
+}
+
+async function dbInsert(record) {
+  try {
+    var body = {
+      id: record.id,
+      name: record.name,
+      dept: record.dept,
+      role: record.role,
+      date: record.date,
+      period: record.period,
+      submitted_at: record.submitted_at,
+      data: record
+    };
+    var resp = await fetch(SUPABASE_URL + '/rest/v1/reports', {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      var err = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + err);
+    }
+    return true;
+  } catch(e) {
+    console.error('[DB] Insert error:', e);
+    return false;
+  }
+}
+
+async function dbDelete(id) {
+  try {
+    var resp = await fetch(SUPABASE_URL + '/rest/v1/reports?id=eq.' + id, {
+      method: 'DELETE',
+      headers: sbHeaders()
+    });
+    return resp.ok;
+  } catch(e) {
+    console.error('[DB] Delete error:', e);
+    return false;
+  }
+}
+
+async function dbUpdate(id, record) {
+  try {
+    var body = {
+      name: record.name,
+      dept: record.dept,
+      role: record.role,
+      date: record.date,
+      last_edited: new Date().toISOString(),
+      data: record
+    };
+    var resp = await fetch(SUPABASE_URL + '/rest/v1/reports?id=eq.' + id, {
+      method: 'PATCH',
+      headers: sbHeaders(),
+      body: JSON.stringify(body)
+    });
+    return resp.ok;
+  } catch(e) {
+    console.error('[DB] Update error:', e);
+    return false;
+  }
+}
+
 let reports=[],curPeriod='all',curDeptFilter='all',charts={},manageUnlocked=false,managePeriod='all',editingId=null,curP='daily',curDept='';
 
 /* ── NAV ── */
@@ -1138,12 +1245,14 @@ async function submitReport(){
   else if(curDept==='Business Development'&&curP==='monthly'){data={bus_m_grev:gn('bus_m_grev'),bus_m_surveys_sent:gn('bus_m_surveys_sent'),bus_m_surveys_rec:gn('bus_m_surveys_rec'),bus_m_ce:gn('bus_m_ce'),bus_m_new_adj:gn('bus_m_new_adj'),bus_m_emp_part:gn('bus_m_emp_part'),bus_m_eco_claims:gv('bus_m_eco_claims'),bus_m_referrals:getRows('tbl_bus_m_referrals'),bus_m_kpi_est:getRows('tbl_bus_m_kpi_est')};}
   else if(curDept==='Business Development'&&curP==='quarterly'){data={bus_q_grev:gn('bus_q_grev'),bus_q_ce:gn('bus_q_ce'),bus_q_emp_part:gn('bus_q_emp_part'),bus_q_eco_claims:gv('bus_q_eco_claims'),bus_q_referrals:getRows('tbl_bus_q_referrals')};}
   var rec=Object.assign({},base,data);
-  var raw=await sGet(SK);
-  var ex=raw?JSON.parse(raw):[];
-  ex.push(rec);
-  await sSet(SK,JSON.stringify(ex));
-  reports=ex;
-  showToast('Report submitted!');
+  showToast('Saving...');
+  var ok = await dbInsert(rec);
+  if(ok){
+    reports.push(rec);
+    showToast('Report submitted!');
+  } else {
+    showToast('Error saving - check your connection and try again.');
+  }
 }
 
 /* ── DASHBOARD ── */
@@ -1335,13 +1444,15 @@ function renderManageTable(){
 }
 async function delRecord(id){
   if(!confirm('Permanently delete this submission?'))return;
-  var raw=await sGet(SK);
-  var ex=raw?JSON.parse(raw):[];
-  ex=ex.filter(function(r){return r.id!==id;});
-  await sSet(SK,JSON.stringify(ex));
-  reports=ex;
-  renderManageTable();
-  showToast('Deleted.');
+  showToast('Deleting...');
+  var ok = await dbDelete(id);
+  if(ok){
+    reports=reports.filter(function(r){return r.id!==id;});
+    renderManageTable();
+    showToast('Deleted.');
+  } else {
+    showToast('Error deleting - please try again.');
+  }
 }
 function openEdit(id){
   var r=reports.find(function(x){return x.id===id;});
@@ -1379,12 +1490,15 @@ async function saveEdit(){
     r[key]=isNaN(val)||val===''?val:+val;
   });
   r.last_edited=new Date().toISOString();
-  ex[idx]=r;
-  await sSet(SK,JSON.stringify(ex));
-  reports=ex;
-  closeEdit();
-  renderManageTable();
-  showToast('Saved!');
+  var ok = await dbUpdate(r.id, r);
+  if(ok){
+    reports[reports.findIndex(function(x){return x.id===r.id;})]=r;
+    closeEdit();
+    renderManageTable();
+    showToast('Saved!');
+  } else {
+    showToast('Error saving - please try again.');
+  }
 }
 
 /* ── PRINT ── */
@@ -1396,7 +1510,16 @@ function printReport(){
 
 /* ── INIT ── */
 document.getElementById('s_date').valueAsDate=new Date();
-(async function(){var raw=await sGet(SK);reports=raw?JSON.parse(raw):[];})();
+(async function(){
+  try {
+    var raw = await sGet(SK);
+    reports = raw ? JSON.parse(raw) : [];
+    console.log('[DB] Loaded', reports.length, 'reports from Supabase');
+  } catch(e) {
+    console.warn('[DB] Could not load reports:', e);
+    reports = [];
+  }
+})();
 
 
 
